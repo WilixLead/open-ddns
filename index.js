@@ -79,10 +79,10 @@ const server = http.createServer((request, response) => {
   }
 });
 
-server.listen(config.server.port, (err) => {
+server.listen(config.server.port, config.server.host, (err) => {
   if (err) {
     return console.log(err);
   }
-  console.log(`DDNS server is listening on ${config.server.port}`);
+  console.log(`DDNS server is listening on ${config.server.host + ':' + config.server.port}`);
 });
 
