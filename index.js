@@ -2,6 +2,7 @@
 
 const http = require('http');
 const crypto = require('crypto');
+const fs = require('fs');
 const URL = require('url');
 const RegRuApi = require('./reg-ru-api');
 const config = require('./config.json');
@@ -62,6 +63,12 @@ const server = http.createServer((request, response) => {
     console.error('Request rejected: bad_signature');
     return response.end('bad_signature');
   }
+  if (record['lastIp'] && record['lastIp'] === url.query.ip) {
+    console.log('IP:', url.query.ip, 'already used');
+    console.log('Zone NOT updated');
+    response.end('ok');
+    return;
+  }
   if (url.query.provider === 'regru') {
     regruApi.updateRecord(url.query.username,
                           config.regru[url.query.username].password,
@@ -71,6 +78,8 @@ const server = http.createServer((request, response) => {
       .then(() => {
         console.log('Zone updated');
         response.end('ok');
+        record['lastIp'] = url.query.ip;
+        updateConfig();
       })
       .catch((err) => {
         console.error('Request rejected: api-error', err);
@@ -78,6 +87,10 @@ const server = http.createServer((request, response) => {
       })
   }
 });
+
+function updateConfig() {
+  fs.writeFileSync('./config.json', JSON.stringify(config, null, 2));
+}
 
 server.listen(config.server.port, config.server.host, (err) => {
   if (err) {
