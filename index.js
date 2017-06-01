@@ -1,11 +1,18 @@
 'use strict';
-
+const winston = require('winston');
 const http = require('http');
 const crypto = require('crypto');
 const fs = require('fs');
 const URL = require('url');
 const RegRuApi = require('./reg-ru-api');
 const config = require('./config.json');
+
+const log = new(winston.Logger)({
+  transports: [ new (winston.transports.Console)({
+    colorize: 'all',
+    timestamp: true
+  })
+]})
 
 const regruApi = new RegRuApi();
 
@@ -47,7 +54,7 @@ function checkSignature(provider, username, domain, host, ip, signature) {
 
 const server = http.createServer((request, response) => {
   let url = URL.parse(request.url, true);
-  console.log('Requested change:', url.query.provider,
+  log.debug('Requested change:', url.query.provider,
                                   url.query.username,
                                   url.query.domain,
                                   url.query.host,
@@ -60,12 +67,12 @@ const server = http.createServer((request, response) => {
                               url.query.ip,
                               url.query.signature);
   if (!record) {
-    console.error('Request rejected: bad_signature');
+    log.error('Request rejected: bad_signature');
     return response.end('bad_signature');
   }
   if (record['lastIp'] && record['lastIp'] === url.query.ip) {
-    console.log('IP:', url.query.ip, 'already used');
-    console.log('Zone NOT updated');
+    log.info('IP:', url.query.ip, 'already used');
+    log.info('Zone NOT updated');
     response.end('ok');
     return;
   }
@@ -76,13 +83,13 @@ const server = http.createServer((request, response) => {
                           record.host,
                           url.query.ip)
       .then(() => {
-        console.log('Zone updated');
+        log.info('Zone updated');
         response.end('ok');
         record['lastIp'] = url.query.ip;
         updateConfig();
       })
       .catch((err) => {
-        console.error('Request rejected: api-error', err);
+        log.error('Request rejected: api-error', err);
         response.end('update_fail: ' + err);
       })
   }
@@ -94,8 +101,8 @@ function updateConfig() {
 
 server.listen(config.server.port, config.server.host, (err) => {
   if (err) {
-    return console.log(err);
+    return log.error(err);
   }
-  console.log(`DDNS server is listening on ${config.server.host + ':' + config.server.port}`);
+  log.info(`DDNS server is listening on ${config.server.host + ':' + config.server.port}`);
 });
 

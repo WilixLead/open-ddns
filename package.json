@@ -9,6 +9,7 @@
   "author": "Aloyan Dmitry",
   "license": "ISC",
   "dependencies": {
-    "request": "^2.81.0"
+    "request": "^2.81.0",
+    "winston": "^2.3.1"
   }
 }
